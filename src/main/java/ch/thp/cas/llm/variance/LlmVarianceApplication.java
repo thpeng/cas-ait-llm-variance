@@ -1,13 +1,13 @@
 package ch.thp.cas.llm.variance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import ch.thp.cas.llm.variance.client.LlmClient;
+import ch.thp.cas.llm.variance.client.LlmRequestConfig;
+import ch.thp.cas.llm.variance.client.Manufacturer;
+import ch.thp.cas.llm.variance.plan.Plan;
+
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,87 +15,79 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class LlmVarianceApplication implements CommandLineRunner {
 
-    private static final String OPENAI_URL = "https://api.openai.com/v1/responses";
-    // Modell-Snapshot fixieren (keine "latest"-Aliasse). Bei Bedarf austauschen.
-    private static final String MODEL = System.getenv().getOrDefault("OPENAI_MODEL", "gpt-5-mini-2025-08-07");
+    private final Plan plan;
+    private final ApplicationArguments appArgs;
+
+    public LlmVarianceApplication(Plan plan, ApplicationArguments appArgs) {
+        this.plan = plan;
+        this.appArgs = appArgs;
+    }
+
     public static void main(String[] args) {
         SpringApplication.run(LlmVarianceApplication.class, args);
     }
-    private static List<String> hauptstadt= new ArrayList<>();
 
     @Override
     public void run(String... args) throws Exception {
+        Manufacturer manufacturer = getOptionValue("manufacturer") != null
+                ? Manufacturer.valueOf(getOptionValue("manufacturer"))
+                : plan.getManufacturer();
 
-        String apiKey = System.getenv("OPENAI_API_KEY");
-        if (apiKey == null || apiKey.isBlank()) {
-            System.err.println("Bitte OPENAI_API_KEY als Environment-Variable setzen.");
-            System.exit(1);
+        String model = getOptionValue("model") != null
+                ? getOptionValue("model")
+                : plan.getModel();
+        if (model == null) {
+            model = manufacturer.defaultModel();
         }
 
-        // Deterministische Baseline-Frage
-        String prompt = "Frage: Was war die Hauptstadt der Schweiz im Jahre 798?\n"
-                + "Antworte nur mit dem Städtenamen.";
+        String prompt = getOptionValue("prompt") != null
+                ? getOptionValue("prompt")
+                : plan.getPrompt();
 
-        String requestBody = """
-            {
-              "model": "%s",
-              "input": %s
-                                                  }
-            """.formatted(MODEL, toJsonString(prompt));
+        Double temperature = getOptionDouble("temperature") != null
+                ? getOptionDouble("temperature")
+                : plan.getTemperature();
 
-        for (int i = 0; i< 30; i++) {
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(OPENAI_URL))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                    .build();
+        Double topP = getOptionDouble("topP") != null
+                ? getOptionDouble("topP")
+                : plan.getTopP();
 
-            HttpResponse<String> resp = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() / 100 != 2) {
-                System.err.println("HTTP " + resp.statusCode() + ": " + resp.body());
-                System.exit(2);
-            }
+        Integer topK = getOptionInteger("topK") != null
+                ? getOptionInteger("topK")
+                : plan.getTopK();
 
-            // Robust: erst "output_text", sonst aus "output[*].content[*].text"
-            String answer = extractText(resp.body());
-            hauptstadt.add(answer);
+        int iterations = getOptionValue("iterations") != null
+                ? Integer.parseInt(getOptionValue("iterations"))
+                : plan.getIterations();
+
+        LlmClient client = manufacturer.createClient();
+        LlmRequestConfig config = new LlmRequestConfig(model, temperature, topP, topK);
+
+        List<String> results = new ArrayList<>();
+        for (int i = 0; i < iterations; i++) {
+            String answer = client.call(prompt, config);
+            results.add(answer);
         }
-        hauptstadt.stream().forEach(h -> System.out.println(h + ", "));
-        // Erwartet: "Bern"
+        results.forEach(r -> System.out.println(r + ", "));
     }
 
-    // JSON-escape fuer den Prompt
-    private static String toJsonString(String s) {
-        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
-    }
-
-    private static String extractText(String json) throws Exception {
-        ObjectMapper om = new ObjectMapper();
-        JsonNode root = om.readTree(json);
-
-        // 1) Einige Responses enthalten ein Convenience-Feld "output_text"
-        if (root.hasNonNull("output_text")) {
-            return root.get("output_text").asText().trim();
-        }
-
-        // 2) Generisch: output[*] -> message.content[*].text (type=output_text)
-        if (root.has("output")) {
-            for (JsonNode item : root.get("output")) {
-                if ("message".equals(item.path("type").asText())) {
-                    for (JsonNode part : item.path("content")) {
-                        String t = part.path("type").asText();
-                        if ("output_text".equals(t) || "text".equals(t)) {
-                            String txt = part.path("text").asText();
-                            if (txt != null && !txt.isBlank()) return txt.trim();
-                        }
-                    }
-                }
+    private String getOptionValue(String name) {
+        if (appArgs.containsOption(name)) {
+            List<String> values = appArgs.getOptionValues(name);
+            if (values != null && !values.isEmpty()) {
+                return values.getFirst();
             }
         }
+        return null;
+    }
 
-        // 3) Fallback: gesamtes JSON (zur Fehlersuche)
-        return json;
+    private Double getOptionDouble(String name) {
+        String val = getOptionValue(name);
+        return val != null ? Double.parseDouble(val) : null;
+    }
+
+    private Integer getOptionInteger(String name) {
+        String val = getOptionValue(name);
+        return val != null ? Integer.parseInt(val) : null;
     }
 }

@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: cas-ait-llm-variance
+
+plan:
+  manufacturer: ANTHROPIC
+ # model: swiss-ai_Apertus-8B-Instruct-2509-GGUF
+  #model: qwen/qwen3-8b
+  model: claude-sonnet-4-5-20250929
+  #prompt: "Frage: Was war die Hauptstadt der Schweiz im Jahre 798?\nAntworte nur mit dem Städtenamen."
+  prompt: "gib mir eine Rundreise durch die Schweiz mit 5 Zielen an"
+  iterations: 20
+  temperature: 0.0
