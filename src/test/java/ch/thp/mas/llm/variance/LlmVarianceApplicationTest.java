@@ -2,6 +2,7 @@ package ch.thp.mas.llm.variance;
 
 import static org.mockito.Mockito.verify;
 
+import ch.thp.mas.llm.variance.analyze.AnalyzeCommand;
 import ch.thp.mas.llm.variance.plan.ResolvedPlan;
 import ch.thp.mas.llm.variance.run.PlanRunner;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,9 @@ class LlmVarianceApplicationTest {
 
     @MockitoBean
     private PlanRunner planRunner;
+
+    @MockitoBean
+    private AnalyzeCommand analyzeCommand;
 
     @Test
     void wiresCommandLinePlanToRunner() throws Exception {
