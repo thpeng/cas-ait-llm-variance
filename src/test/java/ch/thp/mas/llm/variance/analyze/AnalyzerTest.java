@@ -1,8 +1,13 @@
 package ch.thp.mas.llm.variance.analyze;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ch.thp.mas.llm.variance.client.Manufacturer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import java.io.InputStream;
 import ch.thp.mas.llm.variance.run.RunConfigLog;
 import ch.thp.mas.llm.variance.run.RunLog;
 import ch.thp.mas.llm.variance.run.RunLogEntry;
@@ -15,19 +20,12 @@ class AnalyzerTest {
 
     @Test
     void analyzesRunWithFakeEmbeddings() {
-        Analyzer analyzer = new Analyzer(
+        Analyzer analyzer = analyzer(
                 (texts, config) -> List.of(
                         new EmbeddingResult(new double[]{1, 0}, false),
                         new EmbeddingResult(new double[]{0.99, 0.01}, false),
                         new EmbeddingResult(new double[]{0, 1}, false)
-                ),
-                new CosineDistance(),
-                new MedoidSelector(),
-                new DbscanClusterer(),
-                new RougeLMetric(new TextTokenizer()),
-                new BleuMetric(new TextTokenizer()),
-                new SummaryStatistics(),
-                new FixedClock()
+                )
         );
 
         AnalysisResult result = analyzer.analyze(new NamedRunLog("run.json", runLog()));
@@ -40,7 +38,115 @@ class AnalyzerTest {
         assertThat(result.syntactic().clusters().getFirst().pairCount()).isEqualTo(1);
     }
 
+    @Test
+    void analyzesStableSingleWordAnswersExactly() {
+        Analyzer analyzer = analyzer((texts, config) -> List.of(
+                new EmbeddingResult(new double[]{1, 0}, false),
+                new EmbeddingResult(new double[]{1, 0}, false),
+                new EmbeddingResult(new double[]{1, 0}, false)
+        ));
+
+        AnalysisResult result = analyzer.analyze(new NamedRunLog("single-word-capital.json", stableRunLog()));
+
+        assertThat(result.semantic().clusters()).hasSize(1);
+        assertThat(result.semantic().outliers()).isEmpty();
+        assertThat(result.semantic().medoid().repetitionIndex()).isEqualTo(1);
+        assertThat(result.semantic().pairwiseCosineDistance().max()).isEqualTo(0.0);
+        assertThat(result.syntactic().clusters().getFirst().pairCount()).isEqualTo(3);
+        assertThat(result.syntactic().clusters().getFirst().rougeLDistance().median()).isEqualTo(0.0);
+        assertThat(result.syntactic().clusters().getFirst().bleuDistance().median()).isEqualTo(0.0);
+    }
+
+    @Test
+    void analyzesTwoClearSemanticClusters() {
+        Analyzer analyzer = analyzer((texts, config) -> List.of(
+                new EmbeddingResult(new double[]{1.0, 0.0}, false),
+                new EmbeddingResult(new double[]{0.99, 0.01}, false),
+                new EmbeddingResult(new double[]{0.0, 1.0}, false),
+                new EmbeddingResult(new double[]{0.01, 0.99}, false)
+        ));
+
+        AnalysisResult result = analyzer.analyze(new NamedRunLog("two-clusters.json", runLog(
+                "Bern ist die Hauptstadt.",
+                "Die Hauptstadt ist Bern.",
+                "Die Reise startet in Genf.",
+                "Eine Rundreise startet in Genf."
+        )));
+
+        assertThat(result.semantic().clusters()).hasSize(2);
+        assertThat(result.semantic().clusters().get(0).repetitionIndices()).containsExactly(1, 2);
+        assertThat(result.semantic().clusters().get(1).repetitionIndices()).containsExactly(3, 4);
+        assertThat(result.semantic().outliers()).isEmpty();
+        assertThat(result.syntactic().clusters()).extracting(SyntacticCluster::pairCount)
+                .containsExactly(1, 1);
+    }
+
+    @Test
+    void reportsTruncatedResponses() {
+        Analyzer analyzer = analyzer((texts, config) -> List.of(
+                new EmbeddingResult(new double[]{1, 0}, true),
+                new EmbeddingResult(new double[]{1, 0}, false)
+        ));
+
+        AnalysisResult result = analyzer.analyze(new NamedRunLog("truncated.json", runLog("Bern", "Bern")));
+
+        assertThat(result.semantic().truncatedResponses()).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsRunWithoutResponses() {
+        Analyzer analyzer = analyzer((texts, config) -> List.of());
+        OffsetDateTime now = OffsetDateTime.parse("2026-05-02T10:00:00+02:00");
+        RunLog empty = new RunLog(
+                "0001-empty",
+                now,
+                now,
+                Manufacturer.OPENAI,
+                "gpt-test",
+                null,
+                0,
+                new RunConfigLog(0.0, null, null, null),
+                "prompt",
+                List.of()
+        );
+
+        assertThatThrownBy(() -> analyzer.analyze(new NamedRunLog("empty.json", empty)))
+                .isInstanceOf(AnalysisException.class)
+                .hasMessageContaining("no responses");
+    }
+
+    @Test
+    void goldenStableSingleWordFixtureMatchesExpectedJson() throws Exception {
+        Analyzer analyzer = analyzer((texts, config) -> List.of(
+                new EmbeddingResult(new double[]{1, 0}, false),
+                new EmbeddingResult(new double[]{1, 0}, false),
+                new EmbeddingResult(new double[]{1, 0}, false)
+        ));
+
+        AnalysisResult result = analyzer.analyze(new NamedRunLog("single-word-capital.json", stableRunLog()));
+
+        ObjectMapper objectMapper = objectMapper();
+        JsonNode actual = objectMapper.valueToTree(result);
+        JsonNode expected;
+        try (InputStream inputStream = getClass().getResourceAsStream("/analyze/expected/single-word-capital-analysis.json")) {
+            expected = objectMapper.readTree(inputStream);
+        }
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private static RunLog runLog() {
+        return runLog(
+                "Die Hauptstadt ist Bern.",
+                "Bern ist die Hauptstadt.",
+                "Eine Rundreise durch die Schweiz."
+        );
+    }
+
+    private static RunLog stableRunLog() {
+        return runLog("Bern", "Bern", "Bern");
+    }
+
+    private static RunLog runLog(String... responses) {
         OffsetDateTime now = OffsetDateTime.parse("2026-05-02T10:00:00+02:00");
         return new RunLog(
                 "0001-test",
@@ -49,15 +155,33 @@ class AnalyzerTest {
                 Manufacturer.OPENAI,
                 "gpt-test",
                 null,
-                3,
+                responses.length,
                 new RunConfigLog(0.0, null, null, null),
                 "prompt",
-                List.of(
-                        new RunLogEntry(1, now, now, "Die Hauptstadt ist Bern.", null),
-                        new RunLogEntry(2, now, now, "Bern ist die Hauptstadt.", null),
-                        new RunLogEntry(3, now, now, "Eine Rundreise durch die Schweiz.", null)
-                )
+                java.util.stream.IntStream.range(0, responses.length)
+                        .mapToObj(index -> new RunLogEntry(index + 1, now, now, responses[index], null))
+                        .toList()
         );
+    }
+
+    private static Analyzer analyzer(EmbeddingService embeddingService) {
+        TextTokenizer tokenizer = new TextTokenizer();
+        return new Analyzer(
+                embeddingService,
+                new CosineDistance(),
+                new MedoidSelector(),
+                new DbscanClusterer(),
+                new RougeLMetric(tokenizer),
+                new BleuMetric(tokenizer),
+                new SummaryStatistics(),
+                new FixedClock()
+        );
+    }
+
+    private static ObjectMapper objectMapper() {
+        return new ObjectMapper()
+                .findAndRegisterModules()
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     private static class FixedClock extends SystemRunClock {
