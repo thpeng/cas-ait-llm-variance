@@ -14,6 +14,26 @@ public class BleuMetric {
         this.tokenizer = tokenizer;
     }
 
+    /**
+     * Computes sentence-level BLEU with modified n-gram precision, brevity penalty,
+     * and Chen & Cherry (2014) Method 1 smoothing.
+     *
+     * <p>For n-gram orders with zero matched counts, {@code smoothingEpsilon} is
+     * used as the numerator while the denominator remains unchanged. Non-zero
+     * modified precisions are left unchanged. This corresponds to the smoothing
+     * behaviour used by NLTK's {@code SmoothingFunction.method1}, whose default
+     * epsilon is {@code 0.1}.</p>
+     *
+     * <p>The maximum n-gram order is capped by the candidate length, so empty
+     * candidate n-gram orders do not contribute to the score.</p>
+     *
+     * @param candidate generated text to evaluate
+     * @param reference reference text to compare against
+     * @param config BLEU configuration, including max n-gram order and smoothing epsilon
+     * @return sentence-level BLEU score in the range {@code [0.0, 1.0]}
+     * @see <a href="https://aclanthology.org/W14-3346/">Chen and Cherry (2014), A Systematic Comparison of Smoothing Techniques for Sentence-Level BLEU</a>
+     * @see <a href="https://www.nltk.org/_modules/nltk/translate/bleu_score.html">NLTK bleu_score.py, SmoothingFunction.method1</a>
+     */
     public double score(String candidate, String reference, BleuConfig config) {
         List<String> candidateTokens = tokenizer.tokenize(candidate);
         List<String> referenceTokens = tokenizer.tokenize(reference);
@@ -21,17 +41,28 @@ public class BleuMetric {
             return 0.0;
         }
 
+        int effectiveMaxN = Math.min(config.maxN(), candidateTokens.size());
+        if (effectiveMaxN == 0) {
+            return 0.0;
+        }
+
         double logPrecisionSum = 0.0;
-        for (int n = 1; n <= config.maxN(); n++) {
+        for (int n = 1; n <= effectiveMaxN; n++) {
             Counts counts = modifiedPrecision(candidateTokens, referenceTokens, n);
-            double precision = (counts.matches + 1.0) / (counts.total + 1.0);
+            if (counts.total == 0) {
+                // No n-grams of this order in candidate; skip (cannot contribute).
+                // Reachable only if effectiveMaxN logic is bypassed; defensive guard.
+                return 0.0;
+            }
+            double numerator = counts.matches == 0 ? config.smoothingEpsilon() : counts.matches;
+            double precision = numerator / counts.total;
             logPrecisionSum += Math.log(precision);
         }
 
         double brevityPenalty = candidateTokens.size() > referenceTokens.size()
                 ? 1.0
                 : Math.exp(1.0 - ((double) referenceTokens.size() / candidateTokens.size()));
-        return brevityPenalty * Math.exp(logPrecisionSum / config.maxN());
+        return brevityPenalty * Math.exp(logPrecisionSum / effectiveMaxN);
     }
 
     private Counts modifiedPrecision(List<String> candidate, List<String> reference, int n) {

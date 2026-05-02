@@ -12,7 +12,8 @@
     },
     "bleu": {
       "maxN": 4,
-      "smoothing": "add-one"
+      "smoothing": "add-one",
+      "smoothingEpsilon":0.1
     },
     "rouge": {
       "variant": "ROUGE-L",

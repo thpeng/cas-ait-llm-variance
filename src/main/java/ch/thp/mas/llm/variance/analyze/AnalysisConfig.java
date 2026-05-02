@@ -18,7 +18,7 @@ public record AnalysisConfig(
                 514,
                 "cosine",
                 new DbscanConfig(0.15, 2),
-                new BleuConfig(4, "add-one"),
+                new BleuConfig(4, "add-one", 0.1),
                 new RougeConfig("ROUGE-L", "f1"),
                 "nearest-rank"
         );
