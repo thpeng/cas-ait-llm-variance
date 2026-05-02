@@ -1,14 +1,12 @@
 package ch.thp.mas.llm.variance.plan;
 
 import ch.thp.mas.llm.variance.client.Manufacturer;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "plan")
-public class PlanProperties implements Plan {
+public class YamlPlan implements Plan {
 
     private Manufacturer manufacturer = Manufacturer.OPENAI;
     private String model;
-    private String prompt = "Frage: Was war die Hauptstadt der Schweiz im Jahre 798?\nAntworte nur mit dem Städtenamen.";
+    private String prompt;
     private Double temperature;
     private Double topP;
     private Integer topK;

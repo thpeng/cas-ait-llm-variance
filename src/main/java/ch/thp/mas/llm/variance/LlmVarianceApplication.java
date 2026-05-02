@@ -1,11 +1,8 @@
 package ch.thp.mas.llm.variance;
 
-import ch.thp.mas.llm.variance.client.LlmClient;
-import ch.thp.mas.llm.variance.client.LlmRequestConfig;
-import ch.thp.mas.llm.variance.client.Manufacturer;
-import ch.thp.mas.llm.variance.plan.Plan;
-
-import java.util.ArrayList;
+import ch.thp.mas.llm.variance.plan.PlanBatchResolver;
+import ch.thp.mas.llm.variance.plan.PlanRunner;
+import ch.thp.mas.llm.variance.plan.ResolvedPlan;
 import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.CommandLineRunner;
@@ -15,12 +12,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class LlmVarianceApplication implements CommandLineRunner {
 
-    private final Plan plan;
     private final ApplicationArguments appArgs;
+    private final PlanBatchResolver planBatchResolver;
+    private final PlanRunner planRunner;
 
-    public LlmVarianceApplication(Plan plan, ApplicationArguments appArgs) {
-        this.plan = plan;
+    public LlmVarianceApplication(
+            ApplicationArguments appArgs,
+            PlanBatchResolver planBatchResolver,
+            PlanRunner planRunner
+    ) {
         this.appArgs = appArgs;
+        this.planBatchResolver = planBatchResolver;
+        this.planRunner = planRunner;
     }
 
     public static void main(String[] args) {
@@ -29,65 +32,9 @@ public class LlmVarianceApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        Manufacturer manufacturer = getOptionValue("manufacturer") != null
-                ? Manufacturer.valueOf(getOptionValue("manufacturer"))
-                : plan.getManufacturer();
-
-        String model = getOptionValue("model") != null
-                ? getOptionValue("model")
-                : plan.getModel();
-        if (model == null) {
-            model = manufacturer.defaultModel();
+        List<ResolvedPlan> plans = planBatchResolver.resolve(appArgs);
+        for (ResolvedPlan plan : plans) {
+            planRunner.run(plan);
         }
-
-        String prompt = getOptionValue("prompt") != null
-                ? getOptionValue("prompt")
-                : plan.getPrompt();
-
-        Double temperature = getOptionDouble("temperature") != null
-                ? getOptionDouble("temperature")
-                : plan.getTemperature();
-
-        Double topP = getOptionDouble("topP") != null
-                ? getOptionDouble("topP")
-                : plan.getTopP();
-
-        Integer topK = getOptionInteger("topK") != null
-                ? getOptionInteger("topK")
-                : plan.getTopK();
-
-        int iterations = getOptionValue("iterations") != null
-                ? Integer.parseInt(getOptionValue("iterations"))
-                : plan.getIterations();
-
-        LlmClient client = manufacturer.createClient();
-        LlmRequestConfig config = new LlmRequestConfig(model, temperature, topP, topK);
-
-        List<String> results = new ArrayList<>();
-        for (int i = 0; i < iterations; i++) {
-            String answer = client.call(prompt, config);
-            results.add(answer);
-        }
-        results.forEach(r -> System.out.println(r + ", "));
-    }
-
-    private String getOptionValue(String name) {
-        if (appArgs.containsOption(name)) {
-            List<String> values = appArgs.getOptionValues(name);
-            if (values != null && !values.isEmpty()) {
-                return values.getFirst();
-            }
-        }
-        return null;
-    }
-
-    private Double getOptionDouble(String name) {
-        String val = getOptionValue(name);
-        return val != null ? Double.parseDouble(val) : null;
-    }
-
-    private Integer getOptionInteger(String name) {
-        String val = getOptionValue(name);
-        return val != null ? Integer.parseInt(val) : null;
     }
 }
