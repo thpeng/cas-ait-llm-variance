@@ -10,7 +10,9 @@ public record ResolvedPlan(
         int iterations,
         Double temperature,
         Double topP,
-        Integer topK
+        Integer topK,
+        Long seed,
+        String modelVersion
 ) implements Plan {
 
     @Override
@@ -41,6 +43,11 @@ public record ResolvedPlan(
     @Override
     public Integer getTopK() {
         return topK;
+    }
+
+    @Override
+    public Long getSeed() {
+        return seed;
     }
 
     @Override

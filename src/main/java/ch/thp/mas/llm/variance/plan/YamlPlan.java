@@ -10,6 +10,7 @@ public class YamlPlan implements Plan {
     private Double temperature;
     private Double topP;
     private Integer topK;
+    private Long seed;
     private int iterations = 30;
 
     @Override
@@ -64,6 +65,15 @@ public class YamlPlan implements Plan {
 
     public void setTopK(Integer topK) {
         this.topK = topK;
+    }
+
+    @Override
+    public Long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(Long seed) {
+        this.seed = seed;
     }
 
     @Override

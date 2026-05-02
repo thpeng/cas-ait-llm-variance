@@ -31,7 +31,9 @@ class PlanResolverTest {
                 "--iterations=2",
                 "--temperature=0.7",
                 "--topP=0.8",
-                "--topK=5"
+                "--topK=5",
+                "--seed=123",
+                "--modelVersion=2026-05"
         ));
 
         assertThat(resolved.manufacturer()).isEqualTo(Manufacturer.OPENAI);
@@ -41,6 +43,8 @@ class PlanResolverTest {
         assertThat(resolved.temperature()).isEqualTo(0.7);
         assertThat(resolved.topP()).isEqualTo(0.8);
         assertThat(resolved.topK()).isEqualTo(5);
+        assertThat(resolved.seed()).isEqualTo(123L);
+        assertThat(resolved.modelVersion()).isEqualTo("2026-05");
     }
 
     @Test

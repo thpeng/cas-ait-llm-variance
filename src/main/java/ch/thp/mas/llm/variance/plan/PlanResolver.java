@@ -45,6 +45,10 @@ public class PlanResolver {
         Integer topK = optionValue(appArgs, "topK") != null
                 ? parseInteger(optionValue(appArgs, "topK"), "topK")
                 : plan.getTopK();
+        Long seed = optionValue(appArgs, "seed") != null
+                ? parseLong(optionValue(appArgs, "seed"), "seed")
+                : plan.getSeed();
+        String modelVersion = optionValue(appArgs, "modelVersion");
 
         return new ResolvedPlan(
                 loadedPlan.name(),
@@ -54,7 +58,9 @@ public class PlanResolver {
                 iterations,
                 temperature,
                 topP,
-                topK
+                topK,
+                seed,
+                modelVersion
         );
     }
 
@@ -77,6 +83,14 @@ public class PlanResolver {
     private static Integer parseInteger(String value, String name) {
         try {
             return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw new PlanException("Invalid integer value for " + name + ": " + value, e);
+        }
+    }
+
+    private static Long parseLong(String value, String name) {
+        try {
+            return Long.parseLong(value);
         } catch (NumberFormatException e) {
             throw new PlanException("Invalid integer value for " + name + ": " + value, e);
         }

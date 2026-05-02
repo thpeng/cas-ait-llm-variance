@@ -1,8 +1,8 @@
 package ch.thp.mas.llm.variance;
 
 import ch.thp.mas.llm.variance.plan.PlanBatchResolver;
-import ch.thp.mas.llm.variance.plan.PlanRunner;
 import ch.thp.mas.llm.variance.plan.ResolvedPlan;
+import ch.thp.mas.llm.variance.run.PlanRunner;
 import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.CommandLineRunner;

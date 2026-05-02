@@ -4,6 +4,7 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.Usage;
 
 public class AnthropicClient implements LlmClient {
 
@@ -16,7 +17,7 @@ public class AnthropicClient implements LlmClient {
     }
 
     @Override
-    public String call(String prompt, LlmRequestConfig config) throws Exception {
+    public LlmResponse call(String prompt, LlmRequestConfig config) throws Exception {
         MessageCreateParams.Builder builder = MessageCreateParams.builder()
                 .model(config.model())
                 .maxTokens(1024)
@@ -38,11 +39,15 @@ public class AnthropicClient implements LlmClient {
             if (block.isText()) {
                 String text = block.asText().text();
                 if (text != null && !text.isBlank()) {
-                    return text.trim();
+                    return new LlmResponse(text.trim(), tokenUsage(message.usage()));
                 }
             }
         }
 
-        return message.toString();
+        return new LlmResponse(message.toString(), tokenUsage(message.usage()));
+    }
+
+    private TokenUsage tokenUsage(Usage usage) {
+        return TokenUsage.of(usage.inputTokens(), usage.outputTokens());
     }
 }

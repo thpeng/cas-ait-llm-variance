@@ -1,7 +1,6 @@
-package ch.thp.mas.llm.variance.client;
+package ch.thp.mas.llm.variance.run;
 
-public record LlmRequestConfig(
-        String model,
+public record RunConfigLog(
         Double temperature,
         Double topP,
         Integer topK,

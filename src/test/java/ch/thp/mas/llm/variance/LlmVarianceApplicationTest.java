@@ -2,8 +2,8 @@ package ch.thp.mas.llm.variance;
 
 import static org.mockito.Mockito.verify;
 
-import ch.thp.mas.llm.variance.plan.PlanRunner;
 import ch.thp.mas.llm.variance.plan.ResolvedPlan;
+import ch.thp.mas.llm.variance.run.PlanRunner;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -16,5 +16,7 @@ public interface Plan {
 
     Integer getTopK();
 
+    Long getSeed();
+
     int getIterations();
 }
