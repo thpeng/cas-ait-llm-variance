@@ -1,9 +1,9 @@
-package ch.thp.cas.llm.variance;
+package ch.thp.mas.llm.variance;
 
-import ch.thp.cas.llm.variance.client.LlmClient;
-import ch.thp.cas.llm.variance.client.LlmRequestConfig;
-import ch.thp.cas.llm.variance.client.Manufacturer;
-import ch.thp.cas.llm.variance.plan.Plan;
+import ch.thp.mas.llm.variance.client.LlmClient;
+import ch.thp.mas.llm.variance.client.LlmRequestConfig;
+import ch.thp.mas.llm.variance.client.Manufacturer;
+import ch.thp.mas.llm.variance.plan.Plan;
 
 import java.util.ArrayList;
 import java.util.List;

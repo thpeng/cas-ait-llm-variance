@@ -1,4 +1,4 @@
-package ch.thp.cas.llm.variance.client;
+package ch.thp.mas.llm.variance.client;
 
 public enum Manufacturer {
 

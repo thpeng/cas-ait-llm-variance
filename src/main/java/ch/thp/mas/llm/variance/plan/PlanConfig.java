@@ -1,4 +1,4 @@
-package ch.thp.cas.llm.variance.plan;
+package ch.thp.mas.llm.variance.plan;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

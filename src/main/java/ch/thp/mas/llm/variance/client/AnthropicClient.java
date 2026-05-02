@@ -1,18 +1,17 @@
-package ch.thp.cas.llm.variance.client;
+package ch.thp.mas.llm.variance.client;
 
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 
-public class LmStudioClient implements LlmClient {
+public class AnthropicClient implements LlmClient {
 
     private final com.anthropic.client.AnthropicClient client;
 
-    public LmStudioClient(String baseUrl) {
+    public AnthropicClient(String apiKey) {
         this.client = AnthropicOkHttpClient.builder()
-                .baseUrl(baseUrl)
-                .apiKey("lm-studio")
+                .apiKey(apiKey)
                 .build();
     }
 

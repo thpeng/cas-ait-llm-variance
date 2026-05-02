@@ -1,6 +1,6 @@
-package ch.thp.cas.llm.variance.plan;
+package ch.thp.mas.llm.variance.plan;
 
-import ch.thp.cas.llm.variance.client.Manufacturer;
+import ch.thp.mas.llm.variance.client.Manufacturer;
 
 public interface Plan {
 

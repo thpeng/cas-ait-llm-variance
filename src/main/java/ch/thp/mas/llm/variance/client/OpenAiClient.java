@@ -1,4 +1,4 @@
-package ch.thp.cas.llm.variance.client;
+package ch.thp.mas.llm.variance.client;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
