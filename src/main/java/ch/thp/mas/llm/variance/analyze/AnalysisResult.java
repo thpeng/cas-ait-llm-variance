@@ -9,7 +9,6 @@ public record AnalysisResult(
         AnalysisConfig config,
         AnalysisRunInfo run,
         SemanticAnalysis semantic,
-        SyntacticAnalysis syntactic,
-        List<String> limitations
+        SyntacticAnalysis syntactic
 ) {
 }

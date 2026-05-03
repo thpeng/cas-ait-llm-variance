@@ -75,11 +75,7 @@ public class Analyzer {
                         semanticClusters,
                         outliers(labels)
                 ),
-                new SyntacticAnalysis(syntacticClusters(semanticClusters, responses)),
-                List.of(
-                        "Embedding model choice influences cluster structure.",
-                        "Metrics describe relative variance, not answer correctness."
-                )
+                new SyntacticAnalysis(syntacticClusters(semanticClusters, responses))
         );
     }
 

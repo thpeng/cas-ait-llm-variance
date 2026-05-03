@@ -88,9 +88,5 @@
         }
       }
     ]
-  },
-  "limitations": [
-    "Embedding model choice influences cluster structure.",
-    "Metrics describe relative variance, not answer correctness."
-  ]
+  }
 }

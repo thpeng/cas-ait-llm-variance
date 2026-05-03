@@ -52,8 +52,7 @@ class AnalysisWriterTest {
                         List.of(),
                         List.of()
                 ),
-                new SyntacticAnalysis(List.of()),
-                List.of()
+                new SyntacticAnalysis(List.of())
         );
     }
 
