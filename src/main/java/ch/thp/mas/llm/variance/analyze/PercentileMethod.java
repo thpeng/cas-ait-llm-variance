@@ -9,11 +9,5 @@ public enum PercentileMethod {
      * pick the value at rank {@code ceil(p · n / 100)} in the sorted sequence.
      * No interpolation between values.
      */
-    NEAREST_RANK,
-
-    /**
-     * Linear interpolation between adjacent ranks (matches NumPy's default
-     * {@code linear} method).
-     */
-    LINEAR_INTERPOLATION
+    NEAREST_RANK
 }
