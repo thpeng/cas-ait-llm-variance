@@ -144,7 +144,7 @@ The medoid is the typical answer in the run. It is not a correctness reference.
 
 DBSCAN is used because the number of answer clusters is not known in advance. This is important for LLM evaluation: a stable plan should produce few semantic clusters, while a highly variable plan may produce many clusters or outliers.
 
-Current note: the executable implementation uses a deterministic local hashing embedding service for development and testability. This is not a real semantic model. Before thesis-grade experiment evaluation, this must be replaced by a local multilingual embedding model such as `multilingual-e5-large`.
+Current note: the executable implementation integrates with a WSL-hosted FastAPI service for `intfloat/multilingual-e5-large` on `http://localhost:8000`. A deterministic local hashing embedding service remains available for development and tests via `LLM_VARIANCE_EMBEDDING_PROVIDER=local-hashing`, but it is not a real semantic model.
 
 ### 2. Syntactic Analysis
 
@@ -176,6 +176,15 @@ LMSTUDIO_BASE_URL
 ```
 
 `LMSTUDIO_BASE_URL` is optional and defaults to a local endpoint if not set.
+
+Embedding environment variables:
+
+```text
+LLM_VARIANCE_EMBEDDING_PROVIDER=e5-http
+LLM_VARIANCE_EMBEDDING_BASE_URL=http://localhost:8000
+```
+
+The E5 model is served by `src/main/python/server.py` inside WSL. Java calls `/load`, `/embed`, and `/unload` during analysis. Use `LLM_VARIANCE_EMBEDDING_PROVIDER=local-hashing` only when the WSL model server is unavailable for development or tests.
 
 ## Testing
 

@@ -1,9 +1,7 @@
 package ch.thp.mas.llm.variance.analyze;
 
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class LocalHashingEmbeddingService implements EmbeddingService {
 
     private static final int DIMENSIONS = 384;
@@ -17,8 +15,14 @@ public class LocalHashingEmbeddingService implements EmbeddingService {
     @Override
     public List<EmbeddingResult> embed(List<String> texts, AnalysisConfig config) {
         return texts.stream()
-                .map(text -> embedOne(config.embeddingPrefix() + " " + text, config.maxEmbeddingTokens()))
+                .map(text -> embedOne(textForEmbedding(text, config), config.maxEmbeddingTokens()))
                 .toList();
+    }
+
+    private String textForEmbedding(String text, AnalysisConfig config) {
+        return config.embeddingPrefix().isBlank()
+                ? text
+                : config.embeddingPrefix() + " " + text;
     }
 
     private EmbeddingResult embedOne(String text, int maxTokens) {

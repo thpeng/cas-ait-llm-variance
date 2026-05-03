@@ -31,6 +31,8 @@ import java.util.Objects;
  * its Javadoc for the open question regarding the default embedding model.
  */
 public record AnalysisConfig(
+        String embeddingProvider,
+        String embeddingBaseUrl,
         String embeddingModel,
         String embeddingPrefix,
         int maxEmbeddingTokens,
@@ -42,6 +44,12 @@ public record AnalysisConfig(
 ) {
 
     public AnalysisConfig {
+        if (embeddingProvider == null || embeddingProvider.isBlank()) {
+            throw new IllegalArgumentException("embeddingProvider must not be blank");
+        }
+        if (embeddingBaseUrl == null || embeddingBaseUrl.isBlank()) {
+            throw new IllegalArgumentException("embeddingBaseUrl must not be blank");
+        }
         if (embeddingModel == null || embeddingModel.isBlank()) {
             throw new IllegalArgumentException("embeddingModel must not be blank");
         }
@@ -59,22 +67,20 @@ public record AnalysisConfig(
     /**
      * Baseline configuration for the analysis pipeline.
      *
-     * <p>TODO: replace {@code "local-hashing-v1"} with a real multilingual
-     * embedding model (e.g. an E5 multilingual variant) before running thesis
-     * experiments. The hashing model is a deterministic fallback for local
-     * development and CI; cosine distance over hashing embeddings reflects
-     * lexical/token overlap mediated by the hash function, not semantic
-     * similarity. Using it for the "semantic analysis" pipeline would
-     * undermine the methodological framing in Chapter 3. Once the
-     * multilingual model is installed and the full chain is tested, update
-     * {@code embeddingModel} and verify that {@code maxEmbeddingTokens} and
-     * {@code embeddingPrefix} match the chosen model's contract.
+     * <p>The default provider is the WSL-hosted HTTP service backed by
+     * {@code intfloat/multilingual-e5-large}. For local development and CI,
+     * set {@code LLM_VARIANCE_EMBEDDING_PROVIDER=local-hashing} to use the
+     * deterministic fallback implementation.
      *
      * @return a baseline {@code AnalysisConfig} suitable for local development
      */
     public static AnalysisConfig defaults() {
+        String provider = getenv("LLM_VARIANCE_EMBEDDING_PROVIDER", "e5-http");
+        String baseUrl = getenv("LLM_VARIANCE_EMBEDDING_BASE_URL", "http://localhost:8000");
         return new AnalysisConfig(
-                "local-hashing-v1",
+                provider,
+                baseUrl,
+                "intfloat/multilingual-e5-large",
                 "passage:",
                 514,
                 DistanceMetric.COSINE,
@@ -83,5 +89,10 @@ public record AnalysisConfig(
                 new RougeConfig(RougeConfig.Variant.ROUGE_L, RougeConfig.Aggregation.F1),
                 PercentileMethod.NEAREST_RANK
         );
+    }
+
+    private static String getenv(String name, String fallback) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? fallback : value;
     }
 }

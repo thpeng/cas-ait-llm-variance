@@ -2,7 +2,9 @@
   "sourceRun": "single-word-capital.json",
   "analyzedAt": "2026-05-02T11:00:00+02:00",
   "config": {
-    "embeddingModel": "local-hashing-v1",
+    "embeddingProvider": "e5-http",
+    "embeddingBaseUrl": "http://localhost:8000",
+    "embeddingModel": "intfloat/multilingual-e5-large",
     "embeddingPrefix": "passage:",
     "maxEmbeddingTokens": 514,
     "distance": "COSINE",

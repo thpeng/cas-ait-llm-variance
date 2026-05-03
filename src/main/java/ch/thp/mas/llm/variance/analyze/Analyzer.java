@@ -75,7 +75,7 @@ public class Analyzer {
                         semanticClusters,
                         outliers(labels)
                 ),
-                new SyntacticAnalysis(syntacticClusters(semanticClusters, responses))
+                new SyntacticAnalysis(syntacticClusters(semanticClusters, responses, config))
         );
     }
 
@@ -127,13 +127,17 @@ public class Analyzer {
                 .orElseThrow();
     }
 
-    private List<SyntacticCluster> syntacticClusters(List<SemanticCluster> semanticClusters, List<String> responses) {
+    private List<SyntacticCluster> syntacticClusters(
+            List<SemanticCluster> semanticClusters,
+            List<String> responses,
+            AnalysisConfig config
+    ) {
         return semanticClusters.stream()
-                .map(cluster -> syntacticCluster(cluster, responses))
+                .map(cluster -> syntacticCluster(cluster, responses, config))
                 .toList();
     }
 
-    private SyntacticCluster syntacticCluster(SemanticCluster cluster, List<String> responses) {
+    private SyntacticCluster syntacticCluster(SemanticCluster cluster, List<String> responses, AnalysisConfig config) {
         List<Integer> indices = cluster.repetitionIndices().stream().map(index -> index - 1).toList();
         List<Double> rougeDistances = new ArrayList<>();
         List<Double> bleuDistances = new ArrayList<>();
@@ -142,7 +146,7 @@ public class Analyzer {
                 String left = responses.get(indices.get(i));
                 String right = responses.get(indices.get(j));
                 rougeDistances.add(1.0 - rougeLMetric.score(left, right));
-                bleuDistances.add(1.0 - bleuMetric.score(left, right, AnalysisConfig.defaults().bleu()));
+                bleuDistances.add(1.0 - bleuMetric.score(left, right, config.bleu()));
             }
         }
         return new SyntacticCluster(
