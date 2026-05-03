@@ -1,8 +1,11 @@
 package ch.thp.mas.llm.variance.analyze;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
+
+import java.util.Locale;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 class TextTokenizerTest {
 
@@ -42,5 +45,38 @@ class TextTokenizerTest {
 
         assertThat(tokenizer.tokenize("Grüezi Zürich"))
                 .isEqualTo(tokenizer.tokenize("Grüezi Zürich"));
+    }
+
+    @Test
+    void lowercasesLocaleInsensitively() {
+        TextTokenizer tokenizer = new TextTokenizer();
+        Locale original = Locale.getDefault();
+        try {
+            Locale.setDefault(new Locale("tr", "TR"));
+            // In Turkish locale, "I".toLowerCase() yields "ı" (dotless i),
+            // not "i". Locale.ROOT in the implementation must prevent this.
+            assertThat(tokenizer.tokenize("ISTANBUL"))
+                    .containsExactly("istanbul");
+        } finally {
+            Locale.setDefault(original);
+        }
+    }
+
+    @Test
+    void preservesGermanSharpS() {
+        assertThat(new TextTokenizer().tokenize("Straße Großbuchstaben"))
+                .containsExactly("straße", "großbuchstaben");
+    }
+
+    @Test
+    void discardsSymbolsAndEmoji() {
+        assertThat(new TextTokenizer().tokenize("Preis: 25€ ✓ 👍"))
+                .containsExactly("preis", "25");
+    }
+
+    @Test
+    void throwsOnNullInput() {
+        assertThatThrownBy(() -> new TextTokenizer().tokenize(null))
+                .isInstanceOf(NullPointerException.class);
     }
 }

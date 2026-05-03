@@ -5,21 +5,20 @@
     "embeddingModel": "local-hashing-v1",
     "embeddingPrefix": "passage:",
     "maxEmbeddingTokens": 514,
-    "distance": "cosine",
+    "distance": "COSINE",
     "dbscan": {
       "epsilon": 0.15,
       "minPts": 2
     },
     "bleu": {
       "maxN": 4,
-      "smoothing": "add-one",
-      "smoothingEpsilon":0.1
+      "smoothingEpsilon": 0.1
     },
     "rouge": {
-      "variant": "ROUGE-L",
-      "score": "f1"
+      "variant": "ROUGE_L",
+      "aggregation": "F1"
     },
-    "percentile": "nearest-rank"
+    "percentile": "NEAREST_RANK"
   },
   "run": {
     "planName": "0001-test",
